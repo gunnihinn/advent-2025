@@ -66,7 +66,18 @@ def part1(data):
 
 
 def part2(data):
-    return 0
+    total = 0
+    for a, b in data:
+        found = set()
+        for n in range(a, b + 1):
+            num = str(n)
+            for i in range(1, len(num) // 2 + 1):
+                cand = num[:i] * (len(num) // i)
+                if num == cand and cand not in found:
+                    total += n
+                    found.add(cand)
+
+    return total
 
 
 if __name__ == "__main__":
