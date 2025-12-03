@@ -7,16 +7,20 @@ def parse(fh):
     return data
 
 
-def part1(data):
-    def largest(row):
-        i, a = max(enumerate(row[:-1]), key=lambda pair: pair[1])
-        return 10 * a + max(row[i + 1 :])
+def largest(row, d: int) -> int:
+    if not d:
+        return max(row)
 
-    return sum(largest(row) for row in data)
+    i, n = max(enumerate(row[:-d]), key=lambda pair: pair[1])
+    return (10**d) * n + largest(row[i + 1 :], d - 1)
+
+
+def part1(data):
+    return sum(largest(row, 1) for row in data)
 
 
 def part2(data):
-    return 0
+    return sum(largest(row, 11) for row in data)
 
 
 if __name__ == "__main__":
