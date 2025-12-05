@@ -17,18 +17,19 @@ def parse(fh):
 
 def join(ranges):
     new = []
-    a, b = ranges[0]
-    for i, (c, d) in enumerate(ranges[1:], start=1):
-        assert a <= b
-        if c <= b + 1:
-            b = max(b, d)
-            if i == len(ranges) - 1:
+
+    while ranges:
+        a, b = ranges.pop(0)
+        while ranges:
+            c, d = ranges[0]
+            if c <= b + 1:
+                b = max(b, d)
+                ranges.pop(0)
+            else:
                 new.append((a, b))
+                break
         else:
             new.append((a, b))
-            a, b = c, d
-            if i == len(ranges) - 1:
-                new.append((a, b))
 
     return tuple(new)
 
