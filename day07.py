@@ -1,13 +1,14 @@
 import argparse
-import collections
+import functools
+from typing import List, Set
 
 
 def parse(fh):
     return [line.strip() for line in fh if "S" in line or "^" in line]
 
 
-def part1(data):
-    def step(row, beams):
+def part1(data: List[str]) -> int:
+    def step(row: str, beams: Set[int]) -> Set[int]:
         if not beams:
             i = row.find("S")
             assert i != -1
@@ -34,45 +35,21 @@ def part1(data):
     return splits
 
 
-def step(row, beams):
-    if not beams:
-        i = row.find("S")
-        assert i != -1
-        return {i: 1}
-
-    nxt = collections.defaultdict(int)
-    for i, val in beams.items():
-        if row[i] == "^":
-            nxt[i - 1] += val
-            nxt[i + 1] += val
-        else:
-            nxt[i] = val
-
-    return nxt
-
-
-def part2(data):
-    def step(row, beams):
-        if not beams:
-            i = row.find("S")
-            assert i != -1
-            return {i: 1}
-
-        nxt = collections.defaultdict(int)
-        for i, val in beams.items():
+def part2(data: List[str]) -> int:
+    def step(beams: List[int], row: str) -> List[int]:
+        nxt = [0] * len(row)
+        for i, val in enumerate(beams):
             if row[i] == "^":
                 nxt[i - 1] += val
                 nxt[i + 1] += val
             else:
-                nxt[i] = val
+                nxt[i] += val
 
         return nxt
 
-    beams = {}
-    for row in data:
-        beams = step(row, beams)
+    beams = [1 if c == "S" else 0 for c in data[0]]
 
-    return sum(v for v in beams.values())
+    return sum(functools.reduce(step, data[1:], beams))
 
 
 if __name__ == "__main__":
