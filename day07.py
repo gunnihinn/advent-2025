@@ -1,6 +1,6 @@
 import argparse
 import functools
-from typing import List, Set
+from typing import List, Tuple
 
 
 def parse(fh):
@@ -8,31 +8,23 @@ def parse(fh):
 
 
 def part1(data: List[str]) -> int:
-    def step(row: str, beams: Set[int]) -> Set[int]:
-        if not beams:
-            i = row.find("S")
-            assert i != -1
-            return set([i]), 0
+    def step(acc: Tuple[List[bool], int], row: str) -> Tuple[List[bool], int]:
+        beams, splits = acc
 
-        nxt = set()
-        splits = 0
-        for i in beams:
-            if row[i] == "^":
-                nxt.add(i - 1)
-                nxt.add(i + 1)
+        nxt = [False] * len(row)
+        for i, beam in enumerate(beams):
+            if beam and row[i] == "^":
+                nxt[i - 1] |= beam
+                nxt[i + 1] |= beam
                 splits += 1
             else:
-                nxt.add(i)
+                nxt[i] |= beam
 
         return nxt, splits
 
-    splits = 0
-    beams = None
-    for row in data:
-        beams, s = step(row, beams)
-        splits += s
+    beams = [c == "S" for c in data[0]]
 
-    return splits
+    return functools.reduce(step, data[1:], (beams, 0))[1]
 
 
 def part2(data: List[str]) -> int:
@@ -47,7 +39,7 @@ def part2(data: List[str]) -> int:
 
         return nxt
 
-    beams = [1 if c == "S" else 0 for c in data[0]]
+    beams = [c == "S" for c in data[0]]
 
     return sum(functools.reduce(step, data[1:], beams))
 
