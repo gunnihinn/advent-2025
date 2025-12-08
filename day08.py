@@ -1,7 +1,6 @@
 import argparse
 import collections
 import functools
-import heapq
 import itertools
 
 
@@ -12,38 +11,26 @@ def parse(fh):
         return sum((x1 - x2) ** 2 for x1, x2 in zip(pt1, pt2))
 
     dist = {(p, q): d(p, q) for p, q in itertools.combinations(points, 2)}
+    heap = sorted([pq for pq in dist], key=lambda pq: dist[pq])
 
-    return points, dist
+    return points, heap
 
 
 def join(colors, p, q):
     cp = colors[p]
     cq = colors[q]
-    color = min(cp, cq)
-    new = {}
-    for k, v in colors.items():
-        if v == cp:
-            new[k] = color
-        elif v == cq:
-            new[k] = color
-        else:
-            new[k] = v
 
-    return new
+    return {k: min(cp, cq) if v == cp or v == cq else v for k, v in colors.items()}
 
 
 def part1(data, test: bool):
     iters = 10 if test else 1000
     topk = 3
 
-    points, dist = data
+    points, heap = data
     colors = {pt: i for i, pt in enumerate(points)}
 
-    heap = []
-    for pq, d in dist.items():
-        heapq.heappush(heap, (d, pq))
-
-    for _, (p, q) in heapq.nsmallest(iters, heap):
+    for p, q in heap[:iters]:
         colors = join(colors, p, q)
 
     circuits = collections.Counter(colors.values())
@@ -52,15 +39,10 @@ def part1(data, test: bool):
 
 
 def part2(data):
-    points, dist = data
+    points, heap = data
     colors = {pt: i for i, pt in enumerate(points)}
 
-    heap = []
-    for pq, d in dist.items():
-        heapq.heappush(heap, (d, pq))
-
-    while heap:
-        _, (p, q) = heapq.heappop(heap)
+    for p, q in heap:
         colors = join(colors, p, q)
         if len(set(colors.values())) == 1:
             return p[0] * q[0]
