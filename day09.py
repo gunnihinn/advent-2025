@@ -6,7 +6,8 @@ import functools
 import itertools
 import multiprocessing
 
-is_inside = None
+_data = None
+n = 0
 
 
 def parse(fh):
@@ -27,66 +28,69 @@ def edges(data):
     return zip(data, itertools.islice(itertools.cycle(data), 1, None))
 
 
-def interior(p, q):
-    px, py = p
-    qx, qy = q
-
-    return itertools.product(range(min(px, qx), max(px, qx) + 1), range(min(py, qy), max(py, qy) + 1))
-
-
-def make_is_inside(data):
-    @functools.cache
-    def is_inside(xy):
-        # Cast a ray to the right and count how many times it intersects the edges
-        x, y = xy
-        for p, q in edges(data):
-            px, py = p
-            qx, qy = q
-
-            mx, Mx = min(px, qx), max(px, qx)
-            my, My = min(py, qy), max(py, qy)
-
-            if mx <= x <= Mx and my <= y <= My:
-                return True
-
-        return sum(index(xy, p, q) for p, q in edges(data)) % 2
-
-    return is_inside
-
-
-def index(xy, p, q):
+@functools.cache
+def is_inside(xy):
+    # Cast a ray to the right and count how many times it intersects the edges
     x, y = xy
+    index = 0
+    for p, q in edges(_data):
+        px, py = p
+        qx, qy = q
+
+        mx, Mx = min(px, qx), max(px, qx)
+        my, My = min(py, qy), max(py, qy)
+
+        if mx <= x <= Mx and my <= y <= My:
+            return True
+        elif px == qx:
+            index += x <= px and my <= y < My
+        else:
+            index += y == py and mx <= x <= Mx
+
+    return index % 2
+
+
+def calc(ipq):
+    global n
+    i, (p, q) = ipq
     px, py = p
     qx, qy = q
 
     mx, Mx = min(px, qx), max(px, qx)
     my, My = min(py, qy), max(py, qy)
 
-    if px == qx:
-        return x <= px and my <= y < My
-    else:
-        return y == py and mx <= x <= Mx
+    for x in range(mx, Mx):
+        if not is_inside((x, my)):
+            print(f"{datetime.datetime.now()}: {i}/{n}, {p}, {q} not within area")
+            return 0
+        if not is_inside((x, My)):
+            print(f"{datetime.datetime.now()}: {i}/{n}, {p}, {q} not within area")
+            return 0
 
+    for y in range(my, My):
+        if not is_inside((mx, y)):
+            print(f"{datetime.datetime.now()}: {i}/{n}, {p}, {q} not within area")
+            return 0
+        if not is_inside((Mx, y)):
+            print(f"{datetime.datetime.now()}: {i}/{n}, {p}, {q} not within area")
+            return 0
 
-def contained_in(p, q, is_inside):
-    return all(is_inside(x) for x in interior(p, q))
-
-
-def calc(pq):
-    if all(is_inside(x) for x in interior(pq[0], pq[1])):
-        print(f"{datetime.datetime.now()}: checked {pq}")
-        return area(pq[0], pq[1])
-    else:
-        print(f"{datetime.datetime.now()}: checked {pq}")
+    if not is_inside((Mx, My)):
+        print(f"{datetime.datetime.now()}: {i}/{n}, {p}, {q} not within area")
         return 0
+
+    print(f"{datetime.datetime.now()}: {i}/{n}, {p}, {q} inside area")
+    return area(p, q)
 
 
 def part2(data):
-    global is_inside
-    is_inside = make_is_inside(data)
+    global n
+    global _data
+    n = len(data) * (len(data) - 1) // 2
+    _data = data
 
     with multiprocessing.Pool(10) as pool:
-        return max(pool.map(calc, itertools.combinations(data, 2)))
+        return max(pool.map(calc, enumerate(itertools.combinations(data, 2))))
 
 
 if __name__ == "__main__":
