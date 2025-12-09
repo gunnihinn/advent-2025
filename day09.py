@@ -3,8 +3,6 @@
 import argparse
 import functools
 import itertools
-import multiprocessing
-import os
 
 _edges = None
 
@@ -45,8 +43,7 @@ def is_inside(xy):
     return index % 2
 
 
-def calc(pq):
-    p, q = pq
+def fits(p, q):
     px, py = p
     qx, qy = q
 
@@ -54,35 +51,37 @@ def calc(pq):
     my, My = min(py, qy), max(py, qy)
 
     if not is_inside((mx, my)):
-        return 0
+        return False
     elif not is_inside((mx, My)):
-        return 0
+        return False
     elif not is_inside((Mx, my)):
-        return 0
+        return False
     elif not is_inside((Mx, My)):
-        return 0
-
-    for x in range(mx + 1, Mx, 2):
-        if not is_inside((x, my)):
-            return 0
-        if not is_inside((x, My)):
-            return 0
+        return False
 
     for y in range(my + 1, My, 2):
         if not is_inside((mx, y)):
-            return 0
+            return False
         if not is_inside((Mx, y)):
-            return 0
+            return False
 
-    return area(p, q)
+    for x in range(mx + 1, Mx, 2):
+        if not is_inside((x, my)):
+            return False
+        if not is_inside((x, My)):
+            return False
+
+    return True
 
 
 def part2(data):
     global _edges
     _edges = tuple(zip(data, list(data[1:]) + [data[0]]))
 
-    with multiprocessing.Pool(os.cpu_count()) as pool:
-        return max(pool.map(calc, itertools.combinations(data, 2)))
+    candidates = sorted(itertools.combinations(data, 2), key=lambda pq: area(pq[0], pq[1]), reverse=True)
+    for p, q in candidates:
+        if fits(p, q):
+            return area(p, q)
 
 
 if __name__ == "__main__":
