@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 
 import argparse
-import datetime
 import functools
 import itertools
 import multiprocessing
+import os
 
-_data = None
-n = 0
+_edges = None
 
 
 def parse(fh):
@@ -24,16 +23,12 @@ def part1(data):
     return max(area(p, q) for p, q in itertools.combinations(data, 2))
 
 
-def edges(data):
-    return zip(data, itertools.islice(itertools.cycle(data), 1, None))
-
-
 @functools.cache
 def is_inside(xy):
     # Cast a ray to the right and count how many times it intersects the edges
     x, y = xy
     index = 0
-    for p, q in edges(_data):
+    for p, q in _edges:
         px, py = p
         qx, qy = q
 
@@ -50,47 +45,44 @@ def is_inside(xy):
     return index % 2
 
 
-def calc(ipq):
-    global n
-    i, (p, q) = ipq
+def calc(pq):
+    p, q = pq
     px, py = p
     qx, qy = q
 
     mx, Mx = min(px, qx), max(px, qx)
     my, My = min(py, qy), max(py, qy)
 
-    for x in range(mx, Mx):
-        if not is_inside((x, my)):
-            print(f"{datetime.datetime.now()}: {i}/{n}, {p}, {q} not within area")
-            return 0
-        if not is_inside((x, My)):
-            print(f"{datetime.datetime.now()}: {i}/{n}, {p}, {q} not within area")
-            return 0
-
-    for y in range(my, My):
-        if not is_inside((mx, y)):
-            print(f"{datetime.datetime.now()}: {i}/{n}, {p}, {q} not within area")
-            return 0
-        if not is_inside((Mx, y)):
-            print(f"{datetime.datetime.now()}: {i}/{n}, {p}, {q} not within area")
-            return 0
-
-    if not is_inside((Mx, My)):
-        print(f"{datetime.datetime.now()}: {i}/{n}, {p}, {q} not within area")
+    if not is_inside((mx, my)):
+        return 0
+    elif not is_inside((mx, My)):
+        return 0
+    elif not is_inside((Mx, my)):
+        return 0
+    elif not is_inside((Mx, My)):
         return 0
 
-    print(f"{datetime.datetime.now()}: {i}/{n}, {p}, {q} inside area")
+    for x in range(mx + 1, Mx, 2):
+        if not is_inside((x, my)):
+            return 0
+        if not is_inside((x, My)):
+            return 0
+
+    for y in range(my + 1, My, 2):
+        if not is_inside((mx, y)):
+            return 0
+        if not is_inside((Mx, y)):
+            return 0
+
     return area(p, q)
 
 
 def part2(data):
-    global n
-    global _data
-    n = len(data) * (len(data) - 1) // 2
-    _data = data
+    global _edges
+    _edges = tuple(zip(data, list(data[1:]) + [data[0]]))
 
-    with multiprocessing.Pool(10) as pool:
-        return max(pool.map(calc, enumerate(itertools.combinations(data, 2))))
+    with multiprocessing.Pool(os.cpu_count()) as pool:
+        return max(pool.map(calc, itertools.combinations(data, 2)))
 
 
 if __name__ == "__main__":
