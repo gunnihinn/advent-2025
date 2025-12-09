@@ -1,14 +1,19 @@
 import argparse
+import itertools
 
 
 def parse(fh):
-    data = [tuple(map(int, line.strip())) for line in fh.readlines()]
+    data = [tuple(map(int, line.split(","))) for line in fh.readlines()]
 
     return data
 
 
+def area(p, q):
+    return (abs(p[0] - q[0]) + 1) * (abs(p[1] - q[1]) + 1)
+
+
 def part1(data):
-    return 0
+    return max(area(p, q) for p, q in itertools.combinations(data, 2))
 
 
 def part2(data):
