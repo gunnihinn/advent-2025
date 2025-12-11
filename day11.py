@@ -1,7 +1,6 @@
 import argparse
 import functools
-
-_data = None
+import itertools
 
 
 def parse(fh):
@@ -15,22 +14,29 @@ def parse(fh):
     return data
 
 
-@functools.cache
-def paths(start, end):
-    if start == end:
-        return 1
+def make_paths(data):
+    @functools.cache
+    def paths(start, end):
+        if start == end:
+            return 1
+        return sum(paths(p, end) for p in data.get(start, []))
 
-    return sum(paths(p, end) for p in _data.get(start, []))
+    return paths
 
 
-def part1(data):
+def product(iterable):
+    "Like sum() but for multiplication."
+    return functools.reduce(lambda x, y: x * y, iterable)
+
+
+def part1(paths):
     return paths("you", "out")
 
 
-def part2(data):
-    svc_dac_fft_out = paths("svr", "dac") * paths("dac", "fft") * paths("fft", "out")
-    svc_fft_dac_out = paths("svr", "fft") * paths("fft", "dac") * paths("dac", "out")
-    return svc_dac_fft_out + svc_fft_dac_out
+def part2(paths):
+    tracks = [("svr", "dac", "fft", "out"), ("svr", "fft", "dac", "out")]
+
+    return sum(product(itertools.starmap(paths, zip(t, t[1:]))) for t in tracks)
 
 
 if __name__ == "__main__":
@@ -41,11 +47,10 @@ if __name__ == "__main__":
     with open(args.filename) as fh:
         data = parse(fh)
 
-    global _data
-    _data = data
+    paths = make_paths(data)
 
-    p1 = part1(data)
-    p2 = part2(data)
+    p1 = part1(paths)
+    p2 = part2(paths)
 
     print(f"part1: {p1}")
     print(f"part2: {p2}")
